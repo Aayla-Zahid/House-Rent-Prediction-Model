@@ -96,7 +96,12 @@ with st.container(border=True):
     with col7:
         Point_of_Contact = st.selectbox("Point of Contact", ["Contact Owner", "Contact Agent", "Contact Builder"])
         Tenant_Preferred = st.selectbox("Tenant Preferred", ["Bachelors", "Bachelors/Family", "Family"])
-        Area_Locality = st.text_input('Area Locality', placeholder="e.g. Bandra West, Gachibowli")
+        Area_Locality = st.selectbox(
+            "Area Locality",
+            ["Bandra West", "Gachibowli", "Electronic City", "Velachery",
+             "Miyapur, NH 9", "Madipakkam", "Chembur", "K R Puram",
+             "Laxmi Nagar", "Kondapur", "Medavakkam"]
+        )
 
 st.write("")
 predict_clicked = st.button('🔍 Predict Rent', use_container_width=True)

@@ -46,7 +46,6 @@ with st.sidebar:
 
 # ---------- Header ----------
 st.title("🏠 House Rent Prediction Model")
-st.subheader("Aayla Zahid Butt")
 st.caption("Fill in the property details below to get an instant rent estimate.")
 st.divider()
 

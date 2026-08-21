@@ -1,4 +1,4 @@
-import joblib
+blib
 import numpy as np
 import pandas as pd
 import sklearn as sk
@@ -31,6 +31,12 @@ label_model = joblib.load('ml_Label_Encoder.pkl')
 
 # loadig the  Label Regression Model
 reg_model = joblib.load('ml_Regression_model.pkl')
+
+# loading the dataset so the Floor and Area Locality dropdowns always show
+# every unique value that exists in the training data
+data_df = pd.read_csv('House_Rent_Dataset.csv')
+floor_options = sorted(data_df['Floor'].dropna().unique().tolist())
+area_locality_options = sorted(data_df['Area Locality'].dropna().unique().tolist())
 
 
 def safe_encode(encoder, value, field_name):
@@ -107,34 +113,14 @@ st.divider()
 # ---------- Floor Details ----------
 with st.container(border=True):
     st.subheader("🏢 Floor Details")
-    col1, col2 = st.columns(2)
-    with col1:
-        floor_type = st.selectbox(
-            "Floor Type",
-            ["Ground", "Numbered Floor", "Upper Basement", "Lower Basement"]
-        )
-        if floor_type == "Numbered Floor":
-            current_floor = st.number_input(
-                "Which floor is the house on?",
-                min_value=1, max_value=76, value=1, step=1
-            )
-            floor_label = str(int(current_floor))
-        else:
-            floor_label = floor_type
-    with col2:
-        total_floors = st.number_input(
-            "Total floors in the building",
-            min_value=1, max_value=89, value=1, step=1
-        )
-
-floor_str = f"{floor_label} out of {int(total_floors)}"
+    floor_str = st.selectbox("Floor", floor_options)
 
 # ---------- Property Details ----------
 with st.container(border=True):
     st.subheader("📐 Property Details")
     col3, col4, col5 = st.columns(3)
     with col3:
-        BHK = st.number_input('Number of Bedrooms', min_value=0, value=None, step=1, placeholder="e.g. 2")
+        BHK = st.number_input('BHK', min_value=0, value=None, step=1, placeholder="e.g. 2")
     with col4:
         Size = st.number_input('Size (sq ft)', min_value=0, value=None, step=10, placeholder="e.g. 900")
     with col5:
@@ -151,12 +137,7 @@ with st.container(border=True):
     with col7:
         Point_of_Contact = st.selectbox("Point of Contact", ["Contact Owner", "Contact Agent", "Contact Builder"])
         Tenant_Preferred = st.selectbox("Tenant Preferred", ["Bachelors", "Bachelors/Family", "Family"])
-        Area_Locality = st.selectbox(
-            "Area Locality",
-            ["Bandra West", "Gachibowli", "Electronic City", "Velachery",
-             "Miyapur, NH 9", "Madipakkam", "Chembur", "K R Puram",
-             "Laxmi Nagar", "Kondapur", "Medavakkam"]
-        )
+        Area_Locality = st.selectbox("Area Locality", area_locality_options)
 
 st.write("")
 predict_clicked = st.button('🔍 Predict Rent', use_container_width=True)

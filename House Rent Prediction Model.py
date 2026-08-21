@@ -1,8 +1,8 @@
-blib
 import numpy as np
 import pandas as pd
 import sklearn as sk
 import streamlit as st
+import joblib
 
 st.set_page_config(page_title="House Rent Prediction", page_icon="🏠", layout="wide")
 

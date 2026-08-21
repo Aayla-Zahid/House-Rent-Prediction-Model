@@ -32,6 +32,61 @@ label_model = joblib.load('ml_Label_Encoder.pkl')
 # loadig the  Label Regression Model
 reg_model = joblib.load('ml_Regression_model.pkl')
 
+
+def safe_encode(encoder, value, field_name):
+    """
+    Encode a categorical value using a fitted LabelEncoder.
+    If the value was never seen during training, fall back to the
+    encoder's first known class instead of crashing, and warn the user.
+    """
+    if value in encoder.classes_:
+        return encoder.transform([value])[0]
+    else:
+        st.warning(
+            f"'{value}' wasn't in the training data for '{field_name}' — "
+            f"using '{encoder.classes_[0]}' as a fallback."
+        )
+        return encoder.transform([encoder.classes_[0]])[0]
+
+
+def safe_encode_floor(encoder, floor_label, total_floors, field_name="Floor"):
+    """
+    Encode the 'Floor' field ('<floor_label> out of <total_floors>').
+    If the exact string wasn't seen in training, search the encoder's
+    known classes for the same floor_label and pick the one whose total
+    floor count is numerically closest, instead of falling back blindly.
+    """
+    exact = f"{floor_label} out of {int(total_floors)}"
+    if exact in encoder.classes_:
+        return encoder.transform([exact])[0]
+
+    # Look for other known classes with the same floor label
+    candidates = []
+    for cls in encoder.classes_:
+        if cls.startswith(f"{floor_label} out of "):
+            try:
+                cls_total = int(cls.split("out of")[-1].strip())
+                candidates.append((abs(cls_total - int(total_floors)), cls))
+            except ValueError:
+                continue
+
+    if candidates:
+        candidates.sort(key=lambda x: x[0])
+        best_match = candidates[0][1]
+        st.warning(
+            f"'{exact}' wasn't in the training data — "
+            f"using the closest known match '{best_match}' instead."
+        )
+        return encoder.transform([best_match])[0]
+
+    # No match at all for this floor label — fall back to the first known class overall
+    st.warning(
+        f"'{floor_label}' floor type wasn't in the training data at all — "
+        f"using '{encoder.classes_[0]}' as a fallback. Prediction may be less accurate."
+    )
+    return encoder.transform([encoder.classes_[0]])[0]
+
+
 # ---------- Sidebar ----------
 with st.sidebar:
     st.header("🏠 About")
@@ -112,24 +167,15 @@ if predict_clicked:
         st.warning("Please fill in all fields before predicting.")
     else:
         try:
-            # Encode each categorical field using its own saved encoder
-            floor_enc = label_model['Floor'].transform([floor_str])[0]
-            area_type_enc = label_model['Area Type'].transform([Area_type])[0]
-            city_enc = label_model['City'].transform([City])[0]
-            furnish_enc = label_model['Furnishing Status'].transform([Furnish_Status])[0]
-            tenant_enc = label_model['Tenant Preferred'].transform([Tenant_Preferred])[0]
-            poc_enc = label_model['Point of Contact'].transform([Point_of_Contact])[0]
-
-            # Area Locality might contain a value the encoder never saw during training
-            locality_encoder = label_model['Area Locality']
-            if Area_Locality in locality_encoder.classes_:
-                locality_enc = locality_encoder.transform([Area_Locality])[0]
-            else:
-                st.warning(
-                    f"'{Area_Locality}' wasn't in the training data — "
-                    "using the most common locality as a fallback."
-                )
-                locality_enc = 0
+            # Encode each categorical field using its own saved encoder,
+            # safely falling back to a known class if the value is unseen
+            floor_enc = safe_encode(label_model['Floor'], floor_str, "Floor")
+            area_type_enc = safe_encode(label_model['Area Type'], Area_type, "Area Type")
+            city_enc = safe_encode(label_model['City'], City, "City")
+            furnish_enc = safe_encode(label_model['Furnishing Status'], Furnish_Status, "Furnishing Status")
+            tenant_enc = safe_encode(label_model['Tenant Preferred'], Tenant_Preferred, "Tenant Preferred")
+            poc_enc = safe_encode(label_model['Point of Contact'], Point_of_Contact, "Point of Contact")
+            locality_enc = safe_encode(label_model['Area Locality'], Area_Locality, "Area Locality")
 
             features = np.array([[
                 BHK, Size, floor_enc, area_type_enc, locality_enc,
